@@ -1,3 +1,7 @@
+#Windows
+*.vcxproj*
+Debug/
+
 # Prerequisites
 *.d
 
