@@ -49,12 +49,18 @@ void Snake::init()
 	m_length = 3;
 
 	m_direction = FIRST_DIRECTION;
+
+	m_oldTailX = -1;
+	m_oldTailY = -1;
+	printToMap();
 }
 
 void Snake::move()
 {
 	int x = m_head->x;
 	int y = m_head->y;
+	m_oldTailX = m_tail->x;
+	m_oldTailY = m_tail->y;
 
 	directionForward(&x, &y, m_direction);
 
@@ -67,6 +73,8 @@ void Snake::move()
 	}
 	m_head->x = x;
 	m_head->y = y;
+
+	printToMap();
 }
 
 bool Snake::isEatFood(int x, int y)
@@ -77,6 +85,20 @@ bool Snake::isEatFood(int x, int y)
 	directionForward(&headX, &headY, m_direction);
 
 	return headX == x && headY == y;
+}
+
+bool Snake::isBiteSelf()
+{
+	SnakeNode *tmp = m_tail;
+	while (tmp->last != m_head)
+	{
+		if (tmp->x == m_head->x && tmp->y == m_head->y)
+		{
+			return true;
+		}
+		tmp = tmp->last;
+	}
+	return false;
 }
 
 void Snake::eatFood(int x, int y)
@@ -90,6 +112,10 @@ void Snake::eatFood(int x, int y)
 		m_head->last = node;
 		m_head = node;
 	}
+	m_oldTailX = OLD_TAIL_NOT_ERASE;
+	m_oldTailY = OLD_TAIL_NOT_ERASE;
+
+	printToMap();
 }
 
 void Snake::turn(char direction)
@@ -100,9 +126,36 @@ void Snake::turn(char direction)
 	}
 }
 
-void Snake::print()
-{
 
+//把蛇的数据写到地图中
+void Snake::printToMap()
+{
+	SnakeNode *tmp = m_tail;
+	if (OLD_TAIL_NOT_INIT == m_oldTailX && OLD_TAIL_NOT_INIT == m_oldTailY)
+	{
+		/* 全部身体都要写一次到地图中 */
+		while (tmp != m_head)
+		{
+			m_map->setType(tmp->x, tmp->y, TYPE_SNAKE_BODY);
+			tmp = tmp->last;
+		}
+		m_map->setType(tmp->x, tmp->y, TYPE_SNAKE_HEAD);
+
+		return;    //此处很关键，没有了的话，下面if之外的代码会被执行
+	}
+	else if (!(OLD_TAIL_NOT_ERASE == m_oldTailX && OLD_TAIL_NOT_ERASE == m_oldTailY))    //当并不是不用擦除时
+	{
+		/* 擦除旧的尾节点，把上一次的蛇头颜色设置为蛇身的颜色，然后写当前的蛇头到地图中 */
+		m_map->setType(m_oldTailX, m_oldTailY, TYPE_EMPTY);
+	}
+
+	/* 把上一次的蛇头颜色设置为蛇身的颜色，然后写当前的蛇头到地图中 */
+	while (tmp->last != m_head)
+	{
+		tmp = tmp->last;
+	}
+	m_map->setType(tmp->x, tmp->y, TYPE_SNAKE_BODY);
+	m_map->setType(m_head->x, m_head->y, TYPE_SNAKE_HEAD);
 }
 
 bool Snake::isNegativeDirection(char targetDirection, char currentDirection)
