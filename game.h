@@ -10,40 +10,38 @@
 #ifndef _GAME_H_
 #define _GAME_H_
 
-#include <conio.h>
-#include <iostream>
-#include <string>
+#include "food.h"
+#include "map.h"
+#include "print.h"
+#include "snake.h"
+#include "wall.h"
+#include "scanner.h"
 
-namespace game {
-	class Scanner
+namespace game
+{
+	
+	class Game
 	{
 	public:
-		
-		char getChar()
-		{
-			char input = 0;
-			if (_kbhit())
-			{
-				input = getch();
-				cleanInput();
+		Game(unsigned int mapWidth, unsigned int mapHeight, unsigned int gameSpeed = 50);
 
-				return input;
-			}
-			return 0;
-		}
+		void start();
 
 	private:
 
-		void cleanInput()
-		{
-			while (_kbhit())
-			{
-				getch();
-			}
-		}
+		bool turn();
 
+		Map *m_map;
+		Printer *m_printer;
+		Food *m_food;
+		Snake *m_snake;
+		Wall *m_wall;
+		Scanner *m_scanner;
+
+		int m_gameSpeed;
+		int m_mapWidth;
+		int m_mapHeight;
 	};
-
 }
 
 #endif

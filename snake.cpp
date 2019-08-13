@@ -77,10 +77,6 @@ void Snake::move()
 	}
 	m_head->x = x;
 	m_head->y = y;
-	
-	char debugMessage[512] = { 0 };
-	sprintf(debugMessage, "x : %d , y : %d \n", m_head->x, m_head->y);
-	OutputDebugString(debugMessage);
 
 	printToMap();
 }
@@ -166,8 +162,12 @@ void Snake::printToMap()
 	//当并不是不用擦除时
 	else if (!(OLD_TAIL_NOT_ERASE == m_oldTailX && OLD_TAIL_NOT_ERASE == m_oldTailY))
 	{
-		// 擦除旧的尾节点
-		m_map->setType(m_oldTailX, m_oldTailY, TYPE_EMPTY);
+		if (m_map->getType(m_oldTailX, m_oldTailY) != TYPE_FOOD)    //尾结点不是食物时
+		{
+			// 擦除旧的尾节点
+			m_map->setType(m_oldTailX, m_oldTailY, TYPE_EMPTY);
+		}
+		
 	}
 
 	/* 把上一次的蛇头颜色设置为蛇身的颜色，然后写当前的蛇头到地图中 */

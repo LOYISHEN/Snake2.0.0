@@ -7,3 +7,27 @@
 
 #include "food.h"
 
+void Food::set()
+{
+	srand(time(NULL));
+	
+	int mapWidth = m_map->getWidth();
+	int mapHeight = m_map->getHeight();
+
+	int x = 0;
+	int y = 0;
+
+	while (true)
+	{
+		x = rand() % mapWidth;
+		y = rand() % mapHeight;
+		if (m_map->getType(x, y) == TYPE_EMPTY)
+		{
+			m_x = x;
+			m_y = y;
+			m_map->setType(x, y, TYPE_FOOD);
+			
+			return;
+		}
+	}
+}

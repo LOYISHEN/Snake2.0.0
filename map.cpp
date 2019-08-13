@@ -70,6 +70,11 @@ void Map::init(int width, int height)
 	m_mapHeight = height;
 	m_mapWidth = width;
 	m_mapSize = height * width;
+
+	for (int i = 0; i < m_mapSize; i++)
+	{
+		m_map[i] = TYPE_EMPTY;
+	}
 }
 
 //释放地图的空间

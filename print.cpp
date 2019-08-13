@@ -12,11 +12,13 @@ COORD pos = { 0,0 };    //输出的位置
 CONSOLE_CURSOR_INFO cci;    //定义结构体
 
 //构造函数 参数为当前操作的地图
-Printer::Printer(Map *map)
+Printer::Printer(Map *map, int left, int top)
 {
 	init();
 	m_map = map;
 	m_oldMap = *map;
+	m_top = top;
+	m_left = left;
 }
 
 //打印地图 只会打印有变化的点
@@ -30,7 +32,7 @@ void Printer::printMap()
 			if (m_oldMap.getType(x, y) != m_map->getType(x, y)
 				&& m_oldMap.getType(x, y) != TYPE_ERROR && m_map->getType(x, y) != TYPE_ERROR)
 			{
-				printPix(x, y, typeToColor(m_map->getType(x, y)));
+				printPix(x + m_left, y + m_top, typeToColor(m_map->getType(x, y)));
 			}
 		}
 	}

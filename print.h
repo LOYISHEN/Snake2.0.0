@@ -27,7 +27,7 @@ const int COLOR_WALL = 0x00f0;
 class Printer
 {
 public:
-	Printer(Map *map);    //构造函数 参数为当前操作的地图
+	Printer(Map *map, int left = 0, int top = 0);    //构造函数 参数为当前操作的地图
 
 	void printMap();    //打印地图 只会打印有变化的点
 
@@ -41,6 +41,9 @@ private:
 	
 	Map *m_map;    //当前操作的地图
 	Map m_oldMap;    //旧的地图
+
+	int m_left;
+	int m_top;
 };
 
 

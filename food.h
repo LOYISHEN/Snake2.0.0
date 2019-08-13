@@ -10,11 +10,16 @@
 #ifndef _FOOD_H_
 #define _FOOD_H_
 
+#include "map.h"
+
+#include <time.h>
+
 class Food
 {
 public:
-	Food(int x, int y)
-		:m_x(x), m_y(y) {}
+	Food(Map *map): m_map(map), m_x(-1), m_y(-1){}
+
+	void set();
 
 	int getX() { return m_x; }
 
@@ -23,6 +28,7 @@ public:
 private:
 	int m_x;
 	int m_y;
+	Map *m_map;
 };
 
 #endif // !_FOOD_H_
