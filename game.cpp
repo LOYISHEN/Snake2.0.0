@@ -26,15 +26,16 @@ Game::Game(unsigned int mapWidth, unsigned int mapHeight, unsigned int gameSpeed
 	m_wall = new Wall(m_map);
 	m_scanner = new Scanner();
 
-	if (gameSpeed < 50)
+	if (gameSpeed < 1)
 	{
-		m_gameSpeed = 50;
+		m_gameSpeed = 1;
 	}
 	else
 	{
 		m_gameSpeed = gameSpeed;
 	}
 
+	m_snakeAI = new SnakeAI(m_map, m_snake, m_food);
 }
 
 void Game::start()
@@ -70,9 +71,9 @@ void Game::start()
 
 			m_printer->printMap();
 
-			while (turn());
+			//while (turn());
 
-			m_scanner->getChar();
+			//m_scanner->getChar();
 
 			continue;
 		}
@@ -80,12 +81,18 @@ void Game::start()
 		
 		Sleep(m_gameSpeed);
 
-		pause = !turn();
-		while (pause)
+		//pause = !turn();
+		//while (pause)
+		//{
+		//	pause = turn();
+		//}
+		char direction;
+		if ((direction = m_snakeAI->getDirection()) == -1)
 		{
-			pause = turn();
+			throw "error";
+			return;
 		}
-		
+		m_snake->turn(direction);
 	}
 }
 

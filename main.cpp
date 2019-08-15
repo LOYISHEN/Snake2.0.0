@@ -14,7 +14,7 @@ using namespace std;
 
 int main()
 {
-	game::Game game(20, 20, 200);
+	game::Game game(20, 20, 10);
 
 	game.start();
 

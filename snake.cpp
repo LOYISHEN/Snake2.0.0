@@ -82,7 +82,7 @@ void Snake::move()
 }
 
 //返回是否吃到食物 需要在获取方向后移动蛇前进行判断
-bool Snake::isEatFood()
+bool Snake::isEatFood() const
 {
 	int headX = m_head->x;
 	int headY = m_head->y;
@@ -93,7 +93,7 @@ bool Snake::isEatFood()
 }
 
 //返回是否咬到自己
-bool Snake::isBiteSelf()
+bool Snake::isBiteSelf() const
 {
 	SnakeNode *tmp = m_tail;
 	while (tmp->last != m_head)
@@ -129,6 +129,59 @@ void Snake::eatFood()
 		m_oldTailY = OLD_TAIL_NOT_ERASE;
 		printToMap();
 	}
+}
+
+Snake *Snake::clone(Map *map) const
+{
+	Snake *cloneSnake = new Snake(map);
+
+	//删除蛇身信息
+	SnakeNode *cloneSnakeTail = cloneSnake->m_tail;
+	while (cloneSnakeTail->last != NULL)
+	{
+		cloneSnake->m_tail = cloneSnake->m_tail->last;
+		delete cloneSnakeTail;
+		cloneSnakeTail = cloneSnake->m_tail;
+	}
+	delete cloneSnakeTail;
+
+	//复制蛇身信息
+	SnakeNode *thisSnakeCurrentNode = this->m_tail;
+	cloneSnakeTail = NULL;
+	SnakeNode *cloneSnakeLastNode = NULL;
+	SnakeNode *cloneSnakeCurrentNode = NULL;
+	while (thisSnakeCurrentNode != this->m_head)
+	{
+		cloneSnakeCurrentNode = new SnakeNode;
+		cloneSnakeCurrentNode->x = thisSnakeCurrentNode->x;
+		cloneSnakeCurrentNode->y = thisSnakeCurrentNode->y;
+		
+		if (NULL == cloneSnakeTail)
+		{
+			cloneSnakeTail = cloneSnakeCurrentNode;
+		}
+		
+		if (NULL != cloneSnakeLastNode)
+		{
+			cloneSnakeLastNode->last = cloneSnakeCurrentNode;
+		}
+		
+		cloneSnakeLastNode = cloneSnakeCurrentNode;
+
+		thisSnakeCurrentNode = thisSnakeCurrentNode->last;
+	}
+	cloneSnake->m_head = new SnakeNode;
+	cloneSnake->m_head->last = NULL;
+	cloneSnake->m_head->x = this->m_head->x;
+	cloneSnake->m_head->y = this->m_head->y;
+	cloneSnakeCurrentNode->last = cloneSnake->m_head;
+
+	cloneSnake->m_tail = cloneSnakeTail;
+
+	cloneSnake->m_direction = m_direction;
+	cloneSnake->m_length = m_length;
+	
+	return cloneSnake;
 }
 
 //转弯 传入参数为要转向的方向
@@ -180,7 +233,7 @@ void Snake::printToMap()
 }
 
 //返回是否是反方向 turn函数调用
-bool Snake::isNegativeDirection(char targetDirection, char currentDirection)
+bool Snake::isNegativeDirection(char targetDirection, char currentDirection) const
 {
 	switch (targetDirection)
 	{
@@ -208,7 +261,7 @@ bool Snake::isNegativeDirection(char targetDirection, char currentDirection)
 }
 
 //前方方向位置 计算在蛇头direction方向的坐标
-void Snake::directionForward(int *x, int *y, char direction)
+void Snake::directionForward(int *x, int *y, char direction) const
 {
 	switch (direction)
 	{
@@ -237,12 +290,13 @@ void Snake::release()
 {
 	SnakeNode *tmp = this->m_tail;
 
-	while (tmp != NULL)
+	while (tmp->last != NULL)
 	{
 		this->m_tail = this->m_tail->last;
 		delete tmp;
 		tmp = this->m_tail;
 	}
+	delete tmp;
 
 	this->m_tail = NULL;
 	this->m_head = NULL;
