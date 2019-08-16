@@ -52,17 +52,19 @@ public:
 	 */
 	bool setType(int x, int y, char type);
 
-	char getType(int x, int y);    //获取地图特定位置的点的类型 当位置超出地图范围时返回TYPE_ERROR
+	char getType(int x, int y) const;    //获取地图特定位置的点的类型 当位置超出地图范围时返回TYPE_ERROR
 
-	int getSize() { return m_mapSize; }
-	int getWidth() { return m_mapWidth; }
-	int getHeight() { return m_mapHeight; }
+	int getSize()const { return m_mapSize; }
+	int getWidth()const { return m_mapWidth; }
+	int getHeight()const { return m_mapHeight; }
+
+	bool mapIsFullUp();    //地图已经满了，没有空位了
 
 private:
 
-	bool typeIsWrong(char type);    //当传入的类型不存在时返回真，存在则返回假
-	bool isBetweenHeight(int value) { return value >= 0 && value < m_mapHeight; }    //判断数值是否在地图高度范围内
-	bool isBetweenWidth(int value) { return value >= 0 && value < m_mapWidth; }    //判断数值是否在地图宽度范围内
+	bool typeIsWrong(char type) const;    //当传入的类型不存在时返回真，存在则返回假
+	bool isBetweenHeight(int value) const { return value >= 0 && value < m_mapHeight; }    //判断数值是否在地图高度范围内
+	bool isBetweenWidth(int value) const { return value >= 0 && value < m_mapWidth; }    //判断数值是否在地图宽度范围内
 
 	char *m_map;    //地图 用于存储地图的内存地址
 	int m_mapWidth;    //地图宽度

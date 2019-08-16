@@ -68,11 +68,20 @@ void Printer::setPos(int x, int y)
 }
 
 //输出一个带颜色值的像素（两个字符）
-void Printer::printPix(int x, int y, int color)
+void Printer::printPix(int x, int y, int color, char *ch)
 {
-	setPos(2 * x, y);
-	setColor(color);
-	printf("  ");
+	if (NULL == ch)
+	{
+		setPos(2 * x, y);
+		setColor(color);
+		printf("  ");
+	}
+	else
+	{
+		setPos(2 * x, y);
+		setColor(color);
+		printf("%s", ch);
+	}
 }
 
 //转换地图的点的类型为颜色值

@@ -48,19 +48,19 @@ public:
 	void init();
 
 	//返回是否已经初始化
-	bool wasInit() { return m_wasInit; }
+	bool wasInit() const { return m_wasInit; }
 
 	//移动蛇 不能同时与吃食物执行
 	void move();
 
 	//返回是否吃到食物 需要在获取方向后移动蛇前进行判断
-	bool isEatFood();
+	bool isEatFood() const;
 
 	//返回是否撞到墙
-	bool isHitWall() { return m_map->getType(m_head->x, m_head->y) == TYPE_WALL; }
+	bool isHitWall() const { return m_map->getType(m_head->x, m_head->y) == TYPE_WALL; }
 
 	//返回是否咬到自己
-	bool isBiteSelf();
+	bool isBiteSelf() const;
 
 	//吃食物 不能同时与移动蛇执行 当事实上不能吃到食物时不会有任何动作
 	void eatFood();
@@ -68,16 +68,28 @@ public:
 	//转弯 传入参数为要转向的方向
 	void turn(char direction);
 
+	Snake *clone(Map *map) const;
+
 	//获取蛇长度
-	int getLength() { return m_length; }
+	int getLength() const { return m_length; }
+
+	int getHeadX() const { return m_head->x; }
+
+	int getHeadY() const { return m_head->y; }
+
+	int getTailX() const { return m_tail->x; }
+
+	int getTailY() const { return m_tail->y; }
+
+	char getDirection() const { return m_direction; }
 
 private:
 
 	//返回是否是反方向 turn函数调用
-	bool isNegativeDirection(char targetDirection, char currentDirection);
+	bool isNegativeDirection(char targetDirection, char currentDirection) const;
 	
 	//前方方向位置 计算在蛇头direction方向的坐标
-	void directionForward(int *x, int *y, char direction);
+	void directionForward(int *x, int *y, char direction) const;
 
 	//把蛇的数据写到地图中
 	void printToMap();

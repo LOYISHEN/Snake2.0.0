@@ -21,9 +21,9 @@ public:
 
 	void set();
 
-	int getX() { return m_x; }
+	int getX() const { return m_x; }
 
-	int getY() { return m_y; }
+	int getY() const { return m_y; }
 
 private:
 	int m_x;

@@ -18,7 +18,7 @@ class Scanner
 {
 public:
 
-	char getChar()
+	char getChar() const
 	{
 		char input = 0;
 		if (_kbhit())
@@ -33,7 +33,7 @@ public:
 
 private:
 
-	void cleanInput()
+	void cleanInput() const
 	{
 		while (_kbhit())
 		{

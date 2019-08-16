@@ -16,6 +16,8 @@
 #include "snake.h"
 #include "wall.h"
 #include "scanner.h"
+#include "snakeAI.h"
+#include <Windows.h>
 
 namespace game
 {
@@ -25,9 +27,22 @@ namespace game
 	public:
 		Game(unsigned int mapWidth, unsigned int mapHeight, unsigned int gameSpeed = 50);
 
+		~Game()
+		{
+			delete m_map;
+			delete m_printer;
+			delete m_food;
+			delete m_snake;
+			delete m_wall;
+			delete m_scanner;
+			delete m_snakeAI;
+		}
+
 		void start();
 
 	private:
+
+		void initGameEnvironment();
 
 		bool turn();
 
@@ -37,6 +52,7 @@ namespace game
 		Snake *m_snake;
 		Wall *m_wall;
 		Scanner *m_scanner;
+		SnakeAI *m_snakeAI;
 
 		int m_gameSpeed;
 		int m_mapWidth;

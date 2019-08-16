@@ -9,6 +9,10 @@
 
 void Food::set()
 {
+	if (m_map->mapIsFullUp())
+	{
+		return;
+	}
 	srand(time(NULL));
 	
 	int mapWidth = m_map->getWidth();

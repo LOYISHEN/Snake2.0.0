@@ -104,17 +104,29 @@ bool Map::setType(int x, int y, char type)
 }
 
 //获取地图特定位置的点的类型 当位置超出地图范围时返回TYPE_ERROR
-char Map::getType(int x, int y)
+char Map::getType(int x, int y) const
 {
-	if (m_mapSize > 0 && isBetweenWidth(x) && isBetweenHeight(y))
+	if (m_mapSize > 0 && this->isBetweenWidth(x) && this->isBetweenHeight(y))
 	{
 		return m_map[y * m_mapHeight + x];
 	}
 	return TYPE_ERROR;
 }
 
+bool Map::mapIsFullUp()
+{
+	for (int i = 0; i < m_mapSize; i++)
+	{
+		if (m_map[i] == TYPE_EMPTY)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 //当传入的类型不存在时返回真，存在则返回假
-bool Map::typeIsWrong(char type)
+bool Map::typeIsWrong(char type) const
 {
 	switch (type)
 	{
