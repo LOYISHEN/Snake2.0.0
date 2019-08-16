@@ -81,6 +81,8 @@ public:
 
 	int getTailY() const { return m_tail->y; }
 
+	char getDirection() const { return m_direction; }
+
 private:
 
 	//返回是否是反方向 turn函数调用

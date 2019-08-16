@@ -25,6 +25,8 @@ SnakeAI::SnakeAI(Map *map, Snake *snake, Food *food)
 	initWayArray();
 
 	m_printer = new Printer(m_cloneMap, 21);
+
+	m_tailBFSSteps = new int[m_mapSize];
 }
 
 void SnakeAI::initPointRecordArray()
@@ -96,16 +98,20 @@ char SnakeAI::getDirection()
 		//当吃完食物之后没有路到蛇的尾部，寻找没有移动克隆蛇前蛇头到达蛇尾的最长路径成功时
 		if (BFSToTail())
 		{
-			m_direction = m_way[0];
-			if (m_snake->getLength() >= m_mapSize / 3)
+			if (m_snake->getLength() + 20 >= m_mapSize - 2 * m_mapHeight - 2 * m_mapWidth + 4)
 			{
-				if (m_waySteps <= m_snake->getLength() / 2)
-				{
-					findLongestWayToTail();
-				}
+				findLongestWayToTail();
+				return m_direction;
+			}
+			else
+			{
+				cloneMap();
+				cloneSnake();
+				tailBFS();
+				return distinguishDirection();
 			}
 			//m_direction = m_way[0];
-			return m_direction;
+			//return m_direction;
 		}
 
 		
@@ -134,19 +140,24 @@ char SnakeAI::getDirection()
 	//当没有路径到食物时，寻找到达蛇尾的最长路径
 	if(BFSToTail())
 	{
-		m_direction = m_way[0];
-		if (m_snake->getLength() >= m_mapSize / 3)
+		if (m_snake->getLength() + 10 >= m_mapSize)
 		{
-			if (m_waySteps <= m_snake->getLength() / 2)
-			{
-				findLongestWayToTail();
-			}
+			findLongestWayToTail();
+			return m_direction;
+		}
+		else
+		{
+			cloneMap();
+			cloneSnake();
+			tailBFS();
+			return distinguishDirection();
 		}
 		//m_direction = m_way[0];
-		return m_direction;
+		//return m_direction;
 	}
 	
 	//cout << "无解！" << endl;
+	return m_snake->getDirection();
 	throw "无解";
 	return -1;
 }
@@ -213,7 +224,7 @@ bool SnakeAI::BFSToFood()
 bool SnakeAI::BFSSearchPoint(int x, int y, int parentIndex, int *queueTail)
 {
 	char type = m_cloneMap->getType(x, y);
-	int BFSRecordIndex = BFSRecordIndex = y * m_mapHeight + x;    //BFSRecord数组的索引
+	int BFSRecordIndex = y * m_mapHeight + x;    //BFSRecord数组的索引
 
 	if ((type == TYPE_EMPTY || type == TYPE_FOOD) && !m_pointRecord[BFSRecordIndex])
 	{
@@ -371,6 +382,7 @@ bool SnakeAI::isWayToTailSearchPoint(int x, int y, int parentIndex, int *queueTa
 
 bool SnakeAI::DFSToFood()
 {
+	initPointRecordArray();
 	int x = m_cloneSnake->getHeadX();
 	int y = m_cloneSnake->getHeadY();
 
@@ -403,24 +415,25 @@ bool SnakeAI::DFSToFood()
 
 bool SnakeAI::DFSToFood(int x, int y)
 {
+	int recordIndex = y * m_mapHeight + x;
 	if (m_cloneMap->getType(x, y) == TYPE_FOOD)
 	{
 		return true;
 	}
-	else if (m_cloneMap->getType(x, y) == TYPE_EMPTY)
+	else if (m_cloneMap->getType(x, y) == TYPE_EMPTY && !m_pointRecord[recordIndex])
 	{
+		m_pointRecord[recordIndex] = true;
 		if (DFSToFood(x, y - 1)
 			|| DFSToFood(x + 1, y)
 			|| DFSToFood(x, y + 1)
 			|| DFSToFood(x - 1, y))
 		{
+			m_pointRecord[recordIndex] = false;
 			return true;
 		}
+		m_pointRecord[recordIndex] = false;
 	}
-	else
-	{
-		return false;
-	}
+	return false;
 }
 
 bool SnakeAI::BFSToTail()
@@ -654,4 +667,135 @@ bool SnakeAI::test(int x, int y, int steps)
 		break;
 	}
 	return isFoundLongestWay;
+}
+
+void SnakeAI::initTailBFSStepsArray()
+{
+	for (int i = 0; i < m_mapSize; i++)
+	{
+		m_tailBFSSteps[i] = -1;
+	}
+}
+
+void SnakeAI::tailBFS()
+{
+	/* 清除数据 */
+	initPointQueueArray();
+	initTailBFSStepsArray();
+	initWayArray();
+	m_waySteps = 0;
+
+	/* 从蛇尾开始遍历 */
+	m_pointQueue[0][0] = -1;
+	m_pointQueue[0][1] = m_cloneSnake->getTailX();
+	m_pointQueue[0][2] = m_cloneSnake->getTailY();
+
+	int queueTail = 1;
+	int x = -1;
+	int y = -1;
+
+	int steps = 1;
+	int lastPointParent = -1;
+
+	/* 广度遍历 */
+	for (int parentIndex = 0; parentIndex < m_mapSize - 1; parentIndex++)
+	{
+		//当已经没有可以遍历的点时返回
+		if (m_pointQueue[parentIndex][0] == -1 && parentIndex != 0)
+		{
+			return;
+		}
+
+		if (lastPointParent != m_pointQueue[parentIndex][0])
+		{
+			lastPointParent = m_pointQueue[parentIndex][0];
+			steps++;
+		}
+
+		x = m_pointQueue[parentIndex][1];
+		y = m_pointQueue[parentIndex][2];
+
+		tailBFSSearchPoint(x, y - 1, parentIndex, &queueTail, steps);    //向上
+		tailBFSSearchPoint(x + 1, y, parentIndex, &queueTail, steps);    //向右
+		tailBFSSearchPoint(x, y + 1, parentIndex, &queueTail, steps);    //向下
+		tailBFSSearchPoint(x - 1, y, parentIndex, &queueTail, steps);    //向左
+
+	}    // for end
+	return;
+}
+
+void SnakeAI::tailBFSSearchPoint(int x, int y, int parentIndex, int *queueTail, int steps)
+{
+	char type = m_cloneMap->getType(x, y);
+	int tailBFSStepsIndex = y * m_mapHeight + x;
+
+	if (type == TYPE_EMPTY && m_tailBFSSteps[tailBFSStepsIndex] == -1)
+	{
+		m_pointQueue[(*queueTail)][0] = steps;
+		m_pointQueue[(*queueTail)][1] = x;
+		m_pointQueue[(*queueTail)][2] = y;
+
+		m_tailBFSSteps[tailBFSStepsIndex] = steps;    //标识步数
+
+		(*queueTail)++;
+	}
+	return;
+}
+
+char SnakeAI::distinguishDirection()
+{
+	int directionSteps[4][2] = { -1, -1, -1, -1, -1, -1, -1, -1};
+	int headX = m_cloneSnake->getHeadX();
+	int headY = m_cloneSnake->getHeadY();
+	directionSteps[0][0] = 0;
+	directionSteps[0][1] = m_tailBFSSteps[(headY - 1) * m_mapHeight + headX];
+	directionSteps[1][0] = 1;
+	directionSteps[1][1] = m_tailBFSSteps[headY * m_mapHeight + headX + 1];
+	directionSteps[2][0] = 2;
+	directionSteps[2][1] = m_tailBFSSteps[(headY + 1) * m_mapHeight + headX];
+	directionSteps[3][0] = 3;
+	directionSteps[3][1] = m_tailBFSSteps[headY * m_mapHeight + headX - 1];
+	
+	/* 排序 */
+	for (int j = 0; j < 4; j++)
+	{
+		for (int i = j + 1; i < 4; i++)
+		{
+			if (directionSteps[i][1] > directionSteps[j][1])
+			{
+				int steps = directionSteps[i][1];
+				int index = directionSteps[i][0];
+				directionSteps[i][1] = directionSteps[j][1];
+				directionSteps[i][0] = directionSteps[j][0];
+				directionSteps[j][1] = steps;
+				directionSteps[j][0] = index;
+			}
+		}
+	}
+
+	for (int i = 0; i < 4; i++)
+	{
+		if (directionSteps[i][1] == -1)
+		{
+			continue;
+		}
+		cloneMap();
+		cloneSnake();
+		m_printer->printMap();
+		m_waySteps = 1;
+		m_way[0] = directionSteps[i][0] + 1;   //direction是1234，这里是0123
+
+		moveCloneSnake();
+
+		if (isWayToTail())
+		{
+			m_direction = m_way[0];
+			return m_direction;
+		}
+	}
+	if (BFSToTail())
+	{
+		m_direction = m_way[0];
+		return m_direction;
+	}
 }

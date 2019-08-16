@@ -58,6 +58,8 @@ public:
 	int getWidth()const { return m_mapWidth; }
 	int getHeight()const { return m_mapHeight; }
 
+	bool mapIsFullUp();    //地图已经满了，没有空位了
+
 private:
 
 	bool typeIsWrong(char type) const;    //当传入的类型不存在时返回真，存在则返回假

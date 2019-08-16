@@ -113,6 +113,18 @@ char Map::getType(int x, int y) const
 	return TYPE_ERROR;
 }
 
+bool Map::mapIsFullUp()
+{
+	for (int i = 0; i < m_mapSize; i++)
+	{
+		if (m_map[i] == TYPE_EMPTY)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 //当传入的类型不存在时返回真，存在则返回假
 bool Map::typeIsWrong(char type) const
 {

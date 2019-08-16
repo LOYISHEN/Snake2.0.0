@@ -10,10 +10,10 @@ using namespace game;
 
 Game::Game(unsigned int mapWidth, unsigned int mapHeight, unsigned int gameSpeed)
 {
-	if (mapWidth < 20 || mapHeight < 20)
+	if (mapWidth < 15 || mapHeight < 15)
 	{
-		mapWidth = 20;
-		mapHeight = 20;
+		mapWidth = 15;
+		mapHeight = 15;
 	}
 
 	m_mapWidth = mapWidth;
@@ -68,6 +68,8 @@ void Game::start()
 
 		m_wall->printToMap();
 
+		m_printer->printMap();
+
 		if (m_snake->isBiteSelf() || m_snake->isHitWall())
 		{
 			Sleep(1000);
@@ -80,7 +82,6 @@ void Game::start()
 
 			continue;
 		}
-		m_printer->printMap();
 		
 		Sleep(m_gameSpeed);
 
@@ -110,6 +111,11 @@ void Game::start()
 		{
 			lastLength = m_snake->getLength();
 			counter = 0;
+		}
+
+		if (m_snake->getLength() == m_map->getSize() - 2 * m_mapHeight - 2 * m_mapWidth + 4)
+		{
+			return;
 		}
 	}
 }

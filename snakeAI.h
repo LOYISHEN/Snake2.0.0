@@ -73,6 +73,13 @@ private:
 	bool DFSToTail(int x, int y, int steps);
 	bool test(int x, int y, int steps);
 
+	int *m_tailBFSSteps;
+	void tailBFS();
+	void initTailBFSStepsArray();
+	void tailBFSSearchPoint(int x, int y, int parentIndex, int *queueTail, int steps);
+	char distinguishDirection();
+
+
 	const Map *m_map;
 	Map *m_cloneMap;
 	const Snake *m_snake;
