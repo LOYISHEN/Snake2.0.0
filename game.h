@@ -17,6 +17,7 @@
 #include "wall.h"
 #include "scanner.h"
 #include "snakeAI.h"
+#include <Windows.h>
 
 namespace game
 {
@@ -40,6 +41,8 @@ namespace game
 		void start();
 
 	private:
+
+		void initGameEnvironment();
 
 		bool turn();
 

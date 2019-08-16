@@ -133,9 +133,11 @@ void Snake::eatFood()
 
 Snake *Snake::clone(Map *map) const
 {
-	Snake *cloneSnake = new Snake(map);
+	/* 先用一个临时地图赋值给克隆蛇 */
+	Map *tmpMap = new Map(map->getWidth(), map->getHeight());
+	Snake *cloneSnake = new Snake(tmpMap);
 
-	//删除蛇身信息
+	/* 删除蛇身信息 */
 	SnakeNode *cloneSnakeTail = cloneSnake->m_tail;
 	while (cloneSnakeTail->last != NULL)
 	{
@@ -145,7 +147,7 @@ Snake *Snake::clone(Map *map) const
 	}
 	delete cloneSnakeTail;
 
-	//复制蛇身信息
+	/* 复制蛇身信息 */
 	SnakeNode *thisSnakeCurrentNode = this->m_tail;
 	cloneSnakeTail = NULL;
 	SnakeNode *cloneSnakeLastNode = NULL;
@@ -156,6 +158,7 @@ Snake *Snake::clone(Map *map) const
 		cloneSnakeCurrentNode->x = thisSnakeCurrentNode->x;
 		cloneSnakeCurrentNode->y = thisSnakeCurrentNode->y;
 		
+		//把第一个节点设置为尾节点
 		if (NULL == cloneSnakeTail)
 		{
 			cloneSnakeTail = cloneSnakeCurrentNode;
@@ -175,12 +178,23 @@ Snake *Snake::clone(Map *map) const
 	cloneSnake->m_head->x = this->m_head->x;
 	cloneSnake->m_head->y = this->m_head->y;
 	cloneSnakeCurrentNode->last = cloneSnake->m_head;
-
+	
+	//赋值复制的蛇尾
 	cloneSnake->m_tail = cloneSnakeTail;
-
+	
+	/* 复制其他信息 */
 	cloneSnake->m_direction = m_direction;
 	cloneSnake->m_length = m_length;
 	
+	//然后删除临时地图
+	delete tmpMap;
+
+	//提供正确的地图
+	cloneSnake->m_map = map;
+
+	//把蛇信息写到地图中
+	cloneSnake->printToMap();
+
 	return cloneSnake;
 }
 
@@ -292,13 +306,16 @@ void Snake::release()
 
 	while (tmp->last != NULL)
 	{
+		//m_map->setType(tmp->x, tmp->y, TYPE_EMPTY);
 		this->m_tail = this->m_tail->last;
 		delete tmp;
 		tmp = this->m_tail;
 	}
+	//m_map->setType(tmp->x, tmp->y, TYPE_EMPTY);
 	delete tmp;
 
 	this->m_tail = NULL;
 	this->m_head = NULL;
+	this->m_wasInit = false;
 	this->m_wasInit = false;
 }

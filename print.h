@@ -29,15 +29,16 @@ class Printer
 public:
 	Printer(Map *map, int left = 0, int top = 0);    //构造函数 参数为当前操作的地图
 
+	void printPix(int x, int y, int color, char *ch = NULL);    //输出一个带颜色值的像素（两个字符）
+
 	void printMap();    //打印地图 只会打印有变化的点
+
+	int typeToColor(char type);    //转换地图的点的类型为颜色值
 
 private:
 	void init();    //初始化输出设置
 	void setColor(int color);    //设置颜色
 	void setPos(int x, int y);    //设置光标位置
-	void printPix(int x, int y, int color);    //输出一个带颜色值的像素（两个字符）
-
-	int typeToColor(char type);    //转换地图的点的类型为颜色值
 	
 	Map *m_map;    //当前操作的地图
 	Map m_oldMap;    //旧的地图

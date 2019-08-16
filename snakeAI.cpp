@@ -15,55 +15,33 @@ SnakeAI::SnakeAI(Map *map, Snake *snake, Food *food)
 
 	m_cloneSnake = new Snake(m_cloneMap);
 
-	m_BFSRecord = new bool[m_mapSize];
-	initBFSRecordArray();
+	m_pointRecord = new bool[m_mapSize];
+	initPointRecordArray();
 
-	m_DFSRecord = new bool[m_mapSize];
-	initDFSRecordArray();
-
-	m_DFSWay = new int[m_mapSize][3];
-	initDFSWayArray();
-
-	m_BFSQueue = new int[m_mapSize][3];
-	initBFSQueueArray();
+	m_pointQueue = new int[m_mapSize][3];
+	initPointQueueArray();
 
 	m_way = new char[m_mapSize];
 	initWayArray();
+
+	m_printer = new Printer(m_cloneMap, 21);
 }
 
-void SnakeAI::initDFSRecordArray()
+void SnakeAI::initPointRecordArray()
 {
 	for (int i = 0; i < m_map->getSize(); i++)
 	{
-		m_DFSRecord[i] = false;
+		m_pointRecord[i] = false;
 	}
 }
 
-void SnakeAI::initBFSRecordArray()
+void SnakeAI::initPointQueueArray()
 {
 	for (int i = 0; i < m_map->getSize(); i++)
 	{
-		m_BFSRecord[i] = false;
-	}
-}
-
-void SnakeAI::initBFSQueueArray()
-{
-	for (int i = 0; i < m_map->getSize(); i++)
-	{
-		m_BFSQueue[i][0] = -1;
-		m_BFSQueue[i][1] = -1;
-		m_BFSQueue[i][2] = -1;
-	}
-}
-
-void SnakeAI::initDFSWayArray()
-{
-	for (int i = 0; i < m_map->getSize(); i++)
-	{
-		m_DFSWay[i][0] = -1;
-		m_DFSWay[i][1] = -1;
-		m_DFSWay[i][2] = -1;
+		m_pointQueue[i][0] = -1;
+		m_pointQueue[i][1] = -1;
+		m_pointQueue[i][2] = -1;
 	}
 }
 
@@ -80,9 +58,9 @@ void SnakeAI::initWayArray()
  * 思路：
  * 1. 首先找到到达食物的最短路径，找到时进入下一步，否则进入第5步
  * 2. 移动克隆蛇后，判断是否能够到达蛇尾，可以则找到了方向，否则进入下一步
- * 3. 恢复移动克隆蛇前的情况，判断是否能够找到到达蛇尾的最长路径，可以则找到了方向，否则进入下一步
+ * 3. 恢复移动克隆蛇前的情况，判断是否能够找到到达蛇尾的最短路径，可以则找到了方向，否则进入下一步
  * 4. 恢复移动克隆蛇前的情况，判断是否能够找到到达食物的最长路径，可以则找到了方向（这个方向有点虚），否则找不到方向
- * 5. 判断能否找到到达蛇尾的最长路径，可以则找到了方向，否则找不到方向
+ * 5. 判断能否找到到达蛇尾的最短路径，可以则找到了方向，否则找不到方向
  *
  */
 
@@ -116,8 +94,17 @@ char SnakeAI::getDirection()
 		cloneMap();
 		cloneSnake();
 		//当吃完食物之后没有路到蛇的尾部，寻找没有移动克隆蛇前蛇头到达蛇尾的最长路径成功时
-		if (DFSToTail())
+		if (BFSToTail())
 		{
+			m_direction = m_way[0];
+			if (m_snake->getLength() >= m_mapSize / 3)
+			{
+				if (m_waySteps <= m_snake->getLength() / 2)
+				{
+					findLongestWayToTail();
+				}
+			}
+			//m_direction = m_way[0];
 			return m_direction;
 		}
 
@@ -137,7 +124,7 @@ char SnakeAI::getDirection()
 		throw "无解";
 		return -1;
 	}
-	
+
 	char message[128] = { 0 };
 	sprintf(message, "no min way to food\n");
 	OutputDebugString(message);
@@ -145,8 +132,17 @@ char SnakeAI::getDirection()
 	cloneMap();
 	cloneSnake();
 	//当没有路径到食物时，寻找到达蛇尾的最长路径
-	if(DFSToTail())
+	if(BFSToTail())
 	{
+		m_direction = m_way[0];
+		if (m_snake->getLength() >= m_mapSize / 3)
+		{
+			if (m_waySteps <= m_snake->getLength() / 2)
+			{
+				findLongestWayToTail();
+			}
+		}
+		//m_direction = m_way[0];
 		return m_direction;
 	}
 	
@@ -175,15 +171,15 @@ void SnakeAI::cloneSnake()
 bool SnakeAI::BFSToFood()
 {
 	/* 清除数据 */
-	initBFSQueueArray();
-	initBFSRecordArray();
+	initPointQueueArray();
+	initPointRecordArray();
 	initWayArray();
 	m_waySteps = 0;
 
 	/* 从蛇头开始遍历 */
-	m_BFSQueue[0][0] = -1;
-	m_BFSQueue[0][1] = m_cloneSnake->getHeadX();
-	m_BFSQueue[0][2] = m_cloneSnake->getHeadY();
+	m_pointQueue[0][0] = -1;
+	m_pointQueue[0][1] = m_cloneSnake->getHeadX();
+	m_pointQueue[0][2] = m_cloneSnake->getHeadY();
 
 	int queueTail = 1;
 	int x = -1;
@@ -193,13 +189,13 @@ bool SnakeAI::BFSToFood()
 	for (int parentIndex = 0; parentIndex < m_mapSize - 1; parentIndex++)
 	{
 		//当已经没有可以遍历的点时返回false
-		if (m_BFSQueue[parentIndex][0] == -1 && parentIndex != 0)
+		if (m_pointQueue[parentIndex][0] == -1 && parentIndex != 0)
 		{
 			return false;
 		}
 
-		x = m_BFSQueue[parentIndex][1];
-		y = m_BFSQueue[parentIndex][2];
+		x = m_pointQueue[parentIndex][1];
+		y = m_pointQueue[parentIndex][2];
 
 		//向上
 		if (BFSSearchPoint(x, y - 1, parentIndex, &queueTail)    //向上
@@ -216,17 +212,16 @@ bool SnakeAI::BFSToFood()
 
 bool SnakeAI::BFSSearchPoint(int x, int y, int parentIndex, int *queueTail)
 {
-	char type = TYPE_EMPTY;
+	char type = m_cloneMap->getType(x, y);
 	int BFSRecordIndex = BFSRecordIndex = y * m_mapHeight + x;    //BFSRecord数组的索引
 
-	type = m_cloneMap->getType(x, y);
-	if ((type == TYPE_EMPTY || type == TYPE_FOOD) && !m_BFSRecord[BFSRecordIndex])
+	if ((type == TYPE_EMPTY || type == TYPE_FOOD) && !m_pointRecord[BFSRecordIndex])
 	{
-		m_BFSQueue[(*queueTail)][0] = parentIndex;
-		m_BFSQueue[(*queueTail)][1] = x;
-		m_BFSQueue[(*queueTail)][2] = y;
+		m_pointQueue[(*queueTail)][0] = parentIndex;
+		m_pointQueue[(*queueTail)][1] = x;
+		m_pointQueue[(*queueTail)][2] = y;
 
-		m_BFSRecord[BFSRecordIndex] = true;    //标识已经识别过该点
+		m_pointRecord[BFSRecordIndex] = true;    //标识已经识别过该点
 
 		(*queueTail)++;
 
@@ -245,9 +240,9 @@ void SnakeAI::writeWay(int queueTail)
 	int sum = 0;
 	while (queueTail != 0)
 	{
-		m_way[sum] = judgeDireciton(m_BFSQueue[m_BFSQueue[queueTail][0]][1], m_BFSQueue[m_BFSQueue[queueTail][0]][2]
-									, m_BFSQueue[queueTail][1], m_BFSQueue[queueTail][2]);
-		queueTail = m_BFSQueue[queueTail][0];
+		m_way[sum] = judgeDireciton(m_pointQueue[m_pointQueue[queueTail][0]][1], m_pointQueue[m_pointQueue[queueTail][0]][2]
+									, m_pointQueue[queueTail][1], m_pointQueue[queueTail][2]);
+		queueTail = m_pointQueue[queueTail][0];
 
 		sum++;
 	}
@@ -297,21 +292,30 @@ void SnakeAI::moveCloneSnake()
 	{
 		m_cloneSnake->turn(m_way[steps]);
 		m_cloneSnake->move();
+		m_printer->printMap();
 	}
 	m_cloneSnake->turn(m_way[steps]);
-	m_cloneSnake->eatFood();
+	if (m_cloneSnake->isEatFood())
+	{
+		m_cloneSnake->eatFood();
+	}
+	else
+	{
+		m_cloneSnake->move();
+	}
+	m_printer->printMap();
 }
 
 bool SnakeAI::isWayToTail()
 {
 	/* 清除数据 */
-	initBFSQueueArray();
-	initBFSRecordArray();
+	initPointQueueArray();
+	initPointRecordArray();
 
 	/* 从蛇头开始遍历 */
-	m_BFSQueue[0][0] = -1;
-	m_BFSQueue[0][1] = m_cloneSnake->getHeadX();
-	m_BFSQueue[0][2] = m_cloneSnake->getHeadY();
+	m_pointQueue[0][0] = -1;
+	m_pointQueue[0][1] = m_cloneSnake->getHeadX();
+	m_pointQueue[0][2] = m_cloneSnake->getHeadY();
 
 	int queueTail = 1;
 	int x = -1;
@@ -321,13 +325,13 @@ bool SnakeAI::isWayToTail()
 	for (int parentIndex = 0; parentIndex < m_mapSize - 1; parentIndex++)
 	{
 		//当已经没有可以遍历的点时返回false
-		if (m_BFSQueue[parentIndex][0] == -1 && parentIndex != 0)
+		if (m_pointQueue[parentIndex][0] == -1 && parentIndex != 0)
 		{
 			return false;
 		}
 
-		x = m_BFSQueue[parentIndex][1];
-		y = m_BFSQueue[parentIndex][2];
+		x = m_pointQueue[parentIndex][1];
+		y = m_pointQueue[parentIndex][2];
 
 		//向上
 		if (isWayToTailSearchPoint(x, y - 1, parentIndex, &queueTail)    //向上
@@ -348,17 +352,17 @@ bool SnakeAI::isWayToTailSearchPoint(int x, int y, int parentIndex, int *queueTa
 	bool isTailPoint = m_cloneSnake->getTailX() == x && m_cloneSnake->getTailY() == y;
 
 	if ((type == TYPE_EMPTY || (type == TYPE_SNAKE_BODY && isTailPoint))
-		&& !m_BFSRecord[BFSRecordIndex])
+		&& !m_pointRecord[BFSRecordIndex])
 	{
 		if (isTailPoint)
 		{
 			return true;
 		}
-		m_BFSQueue[(*queueTail)][0] = parentIndex;
-		m_BFSQueue[(*queueTail)][1] = x;
-		m_BFSQueue[(*queueTail)][2] = y;
+		m_pointQueue[(*queueTail)][0] = parentIndex;
+		m_pointQueue[(*queueTail)][1] = x;
+		m_pointQueue[(*queueTail)][2] = y;
 
-		m_BFSRecord[BFSRecordIndex] = true;    //标识已经识别过该点
+		m_pointRecord[BFSRecordIndex] = true;    //标识已经识别过该点
 
 		(*queueTail)++;
 	}
@@ -419,35 +423,93 @@ bool SnakeAI::DFSToFood(int x, int y)
 	}
 }
 
-bool SnakeAI::DFSToTail()
+bool SnakeAI::BFSToTail()
 {
-	initDFSRecordArray();
+	initPointQueueArray();
 	initWayArray();
-	initDFSWayArray();
+	initPointRecordArray();
+	m_waySteps = 0;
+
+	/* 从蛇头开始遍历 */
+	m_pointQueue[0][0] = -1;
+	m_pointQueue[0][1] = m_cloneSnake->getHeadX();
+	m_pointQueue[0][2] = m_cloneSnake->getHeadY();
+
+	int queueTail = 1;
+	int x = -1;
+	int y = -1;
+
+	/* 广度遍历 */
+	for (int parentIndex = 0; parentIndex < m_mapSize - 1; parentIndex++)
+	{
+		//当已经没有可以遍历的点时返回false
+		if (m_pointQueue[parentIndex][0] == -1 && parentIndex != 0)
+		{
+			return false;
+		}
+
+		x = m_pointQueue[parentIndex][1];
+		y = m_pointQueue[parentIndex][2];
+
+		//向上
+		if (BFSSearchPointToTail(x, y - 1, parentIndex, &queueTail)    //向上
+			|| BFSSearchPointToTail(x + 1, y, parentIndex, &queueTail)    //向右
+			|| BFSSearchPointToTail(x, y + 1, parentIndex, &queueTail)    //向下
+			|| BFSSearchPointToTail(x - 1, y, parentIndex, &queueTail))    //想左
+		{
+			return true;
+		}
+
+	}    // for end
+	return false;
+}
+
+bool SnakeAI::BFSSearchPointToTail(int x, int y, int parentIndex, int *queueTail)
+{
+	char type = m_cloneMap->getType(x, y);
+	int BFSRecordIndex = BFSRecordIndex = y * m_mapHeight + x;    //BFSRecord数组的索引
+	bool isPointToTail = m_cloneSnake->getTailX() == x && m_cloneSnake->getTailY() == y;
+
+	if ((type == TYPE_EMPTY || (type == TYPE_SNAKE_BODY && isPointToTail)) 
+		 && !m_pointRecord[BFSRecordIndex])
+	{
+		m_pointQueue[(*queueTail)][0] = parentIndex;
+		m_pointQueue[(*queueTail)][1] = x;
+		m_pointQueue[(*queueTail)][2] = y;
+
+		m_pointRecord[BFSRecordIndex] = true;    //标识已经识别过该点
+
+		(*queueTail)++;
+
+		if (isPointToTail)
+		{
+			//在调用本函数前已经初始化了m_way数组了
+			writeWay((*queueTail) - 1);    //把路径写出来
+			return true;
+		}
+	}
+	return false;
+}
+
+bool SnakeAI::findLongestWayToTail()
+{
+	initPointQueueArray();
+	initPointRecordArray();
 	m_waySteps = 0;
 
 	int x = m_cloneSnake->getHeadX();
 	int y = m_cloneSnake->getHeadY();
 
-	int (*currentDFSWays)[3];
-	currentDFSWays = new int[m_map->getSize()][3];
+	m_pointQueue[0][0] = -1;
+	m_pointQueue[0][1] = x;
+	m_pointQueue[0][2] = y;
 
-	if (!DFSToTail(x, y - 1, 0, currentDFSWays))
-	{
-		if (!DFSToTail(x + 1, y, 0, currentDFSWays))
-		{
-			if (!DFSToTail(x, y + 1, 0, currentDFSWays))
-			{
-				if (!DFSToTail(x - 1, y, 0, currentDFSWays))
-				{
-					return false;
-				}
-			}
-		}
-	}
+	bool isFoundLongestWay = DFSToTail(x, y - 1, 0);
+	isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, 0);
+	isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, 0);
+	isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, 0);
 
-	writeWay(m_DFSWay);
-	if ((m_direction = m_way[0]) != -1)
+	if (isFoundLongestWay)
 	{
 		return true;
 	}
@@ -455,76 +517,141 @@ bool SnakeAI::DFSToTail()
 	return false;
 }
 
-void SnakeAI::writeWay(int (*DFSWays)[3])
+bool SnakeAI::DFSToTail(int x, int y, int steps)
 {
-	for (int i = 0; i < m_map->getSize(); i++)
+	if (x <= 0 || y <= 0 || x >= m_mapWidth - 1 || y >= m_mapHeight - 1)
 	{
-		if (-1 == DFSWays[i + 1][0])
-		{
-			break;
-		}
-		m_way[i] = judgeDireciton(m_DFSWay[i][1], m_DFSWay[i][2], m_DFSWay[i + 1][1], m_DFSWay[i + 1][2]);
+		return false;
 	}
-}
-
-bool SnakeAI::DFSToTail(int x, int y, int steps, int (*currentDFSWays)[3])
-{
-	int DFSRecordIndex = y * m_map->getHeight() + x;
-	if (m_waySteps > m_snake->getLength())
-	{
-		char message[128] = { 0 };
-
-		sprintf(message, "m_waySteps is : %d and return\n", m_waySteps);
-		OutputDebugString(message);
-		return true;
-	}
+	int recordIndex = y * m_map->getHeight() + x;
 	if (x == m_cloneSnake->getTailX() && y == m_cloneSnake->getTailY())
 	{
-		if (steps > m_waySteps)
+		//为了减少计算量，当步数大于蛇身时即可停止计算
+		if (steps > m_cloneSnake->getLength() || m_waySteps < steps)
 		{
-			replaceDFSWayByCurrentDFSWays(currentDFSWays);
 			m_waySteps = steps;
-
-			char message[128] = { 0 };
-			sprintf(message, "m_waySteps is : %d\n", m_waySteps);
-			OutputDebugString(message);
+			//直接判断第一个方向就行了
+			m_direction = judgeDireciton(m_pointQueue[0][1], m_pointQueue[0][2], m_pointQueue[1][1], m_pointQueue[1][2]);
+			m_printer->printPix(x, y, COLOR_FOOD);
+			m_printer->printMap();
+			m_printer->printPix(x, y, COLOR_EMPTY);
+			m_printer->printMap();
+			return true;
 		}
 	}
-	else if (m_cloneMap->getType(x, y) == TYPE_EMPTY && !m_DFSRecord[DFSRecordIndex])
+	else if (m_cloneMap->getType(x, y) == TYPE_EMPTY && !m_pointRecord[recordIndex])
 	{
-		m_DFSRecord[DFSRecordIndex] = true;
-		currentDFSWays[steps][0] = steps;
-		currentDFSWays[steps][1] = x;
-		currentDFSWays[steps][2] = y;
+		m_pointRecord[recordIndex] = true;
+		m_pointQueue[steps + 1][0] = steps;
+		m_pointQueue[steps + 1][1] = x;
+		m_pointQueue[steps + 1][2] = y;
+		m_printer->printPix(x, y, COLOR_FOOD);
+		m_printer->printMap();
+		//Sleep(1);
 
-		if (DFSToTail(x, y - 1, steps + 1, currentDFSWays)) return true;
-		if (DFSToTail(x + 1, y, steps + 1, currentDFSWays)) return true;
-		if (DFSToTail(x, y + 1, steps + 1, currentDFSWays)) return true;
-		if (DFSToTail(x - 1, y, steps + 1, currentDFSWays)) return true;
+		bool isFoundLongestWay = test(x, y, steps);
+		//bool isFoundLongestWay = DFSToTail(x, y - 1, steps + 1);
+		//isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, steps + 1);
+		//isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, steps + 1);
+		//isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, steps + 1);
 
-		m_DFSRecord[DFSRecordIndex] = false;
-		currentDFSWays[steps][0] = -1;
-		currentDFSWays[steps][1] = -1;
-		currentDFSWays[steps][2] = -1;
+		m_printer->printPix(x, y, COLOR_EMPTY);
+		m_printer->printMap();
+		m_pointRecord[recordIndex] = false;
+		m_pointQueue[steps + 1][0] = -1;
+		m_pointQueue[steps + 1][1] = -1;
+		m_pointQueue[steps + 1][2] = -1;
+
+		if (isFoundLongestWay)
+		{
+			return true;
+		}
 	}
-
 	return false;
 }
 
-void SnakeAI::replaceDFSWayByCurrentDFSWays(int(*currentDFSWays)[3])
+bool SnakeAI::test(int x, int y, int steps)
 {
-	initDFSWayArray();
-	for (int i = 0; i < m_map->getSize(); i++)
+	bool isFoundLongestWay = false;
+
+	switch (m_direction)
 	{
-		if (-1 == currentDFSWays[i][0])
+	case DIRECTION_DOWN:
+		if (m_food->getX() < x)
 		{
-			char message[128] = { 0 };
-			sprintf(message, "break\n");
-			OutputDebugString(message);
-			break;
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y - 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, steps + 1);
 		}
-		m_DFSWay[i][0] = currentDFSWays[i][0];
-		m_DFSWay[i][1] = currentDFSWays[i][1];
-		m_DFSWay[i][2] = currentDFSWays[i][2];
+		else
+		{
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y - 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, steps + 1);
+		}
+		break;
+		
+	case DIRECTION_LEFT:
+		if (m_food->getY() < y)
+		{
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y - 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, steps + 1);
+		}
+		else
+		{
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y - 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, steps + 1);
+
+		}
+		break;
+
+	case DIRECTION_UP:
+		if (m_food->getX() < x)
+		{
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y - 1, steps + 1);
+		}
+		else
+		{
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y - 1, steps + 1);
+		}
+		
+		break;
+
+	case DIRECTION_RIGHT:
+		if (m_food->getY() < y)
+		{
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y - 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, steps + 1);
+		}
+		else
+		{
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y - 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, steps + 1);
+			isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, steps + 1);
+		}
+		break;
+		
+	default:
+		isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y - 1, steps + 1);
+		isFoundLongestWay = isFoundLongestWay || DFSToTail(x + 1, y, steps + 1);
+		isFoundLongestWay = isFoundLongestWay || DFSToTail(x - 1, y, steps + 1);
+		isFoundLongestWay = isFoundLongestWay || DFSToTail(x, y + 1, steps + 1);
+		break;
 	}
+	return isFoundLongestWay;
 }

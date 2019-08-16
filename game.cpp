@@ -44,10 +44,18 @@ void Game::start()
 	m_food->set();
 
 	bool pause = false;
+	int counter = 0;
+	int lastLength = 3;
 	
 	while (true)
 	{
-		
+		char direction;
+		if ((direction = m_snakeAI->getDirection()) == -1)
+		{
+			throw "error";
+			return;
+		}
+		m_snake->turn(direction);
 		if (m_snake->isEatFood())
 		{
 			m_snake->eatFood();
@@ -64,12 +72,7 @@ void Game::start()
 		{
 			Sleep(1000);
 
-			m_map->init(m_mapWidth, m_mapHeight);
-			m_snake->init();
-			m_wall->printToMap();
-			m_food->set();
-
-			m_printer->printMap();
+			initGameEnvironment();
 
 			//while (turn());
 
@@ -86,13 +89,28 @@ void Game::start()
 		//{
 		//	pause = turn();
 		//}
-		char direction;
-		if ((direction = m_snakeAI->getDirection()) == -1)
+
+		if (lastLength == m_snake->getLength())
 		{
-			throw "error";
-			return;
+			counter++;
+			if (counter > 5000)    //死循环吃不了食物了
+			{
+				counter = 0;
+
+				char message[128] = { 0 };
+				sprintf(message, "snake length is : %d\n", m_snake->getLength());
+				OutputDebugString(message);
+
+				Sleep(1000);
+				initGameEnvironment();
+				lastLength = m_snake->getLength();
+			}
 		}
-		m_snake->turn(direction);
+		else
+		{
+			lastLength = m_snake->getLength();
+			counter = 0;
+		}
 	}
 }
 
@@ -133,4 +151,14 @@ bool Game::turn()
 		}
 	}
 	return true;
+}
+
+void Game::initGameEnvironment()
+{
+	m_map->init(m_mapWidth, m_mapHeight);
+	m_snake->init();
+	m_wall->printToMap();
+	m_food->set();
+
+	m_printer->printMap();
 }

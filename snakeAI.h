@@ -13,6 +13,7 @@
 #include "map.h"
 #include "snake.h"
 #include "food.h"
+#include "print.h"
 #include <Windows.h>
 
 class SnakeAI
@@ -26,17 +27,11 @@ public:
 
 private:
 	
-	//初始化m_BFSRecord数组
-	void initBFSRecordArray();
+	//初始化m_pointRecord数组
+	void initPointRecordArray();
 
-	//初始化m_BFSQueue数组
-	void initBFSQueueArray();
-
-	//初始化m_DFSRecord数组
-	void initDFSRecordArray();
-
-	//初始化m_DFSWay数组
-	void initDFSWayArray();
+	//初始化m_pointQueue数组
+	void initPointQueueArray();
 
 	//初始化m_way数组
 	void initWayArray();
@@ -69,14 +64,14 @@ private:
 	//DFSToFood调用，DFSToFood的重载
 	bool DFSToFood(int x, int y);
 
-	//寻找蛇头到蛇尾的最长路径，找到时返回真，找不到时返回假
-	bool DFSToTail();
-	//DFSToTail调用，用来写路径的每一步方向
-	void writeWay(int (*DFSWays)[3]);
-	//DFSToTail调用，DFSToTail的重载
-	bool DFSToTail(int x, int y, int steps, int (*currentDFSWays)[3]);
-	//DFSToTail的重载函数调用，把当前最远路径替换为当前最远路径
-	void replaceDFSWayByCurrentDFSWays(int(*currentDFSWays)[3]);
+	//寻找蛇头到蛇尾的最短路径，找到时返回真，找不到时返回假
+	bool BFSToTail();
+	//BFSToTail调用，用来搜索某一点
+	bool BFSSearchPointToTail(int x, int y, int parentIndex, int *queueTail);
+
+	bool findLongestWayToTail();
+	bool DFSToTail(int x, int y, int steps);
+	bool test(int x, int y, int steps);
 
 	const Map *m_map;
 	Map *m_cloneMap;
@@ -84,15 +79,14 @@ private:
 	Snake *m_cloneSnake;
 	const Food *m_food;
 
+	Printer *m_printer;
+
 	char m_direction;
 
-	char *m_way;
-	int m_waySteps;
-	bool *m_BFSRecord;
-	int (*m_BFSQueue)[3];
-
-	bool *m_DFSRecord;
-	int(*m_DFSWay)[3];
+	char *m_way;    //路径数组
+	int m_waySteps;    //路径步数
+	bool *m_pointRecord;    //点是否已经遍历过
+	int (*m_pointQueue)[3];    //点序列数组
 
 	const int m_mapWidth;
 	const int m_mapHeight;
